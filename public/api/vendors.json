@@ -1,0 +1,91 @@
+[
+  {
+    "id": "2425961-kafe-joe",
+    "name": "Kafe Joe the Star",
+    "location": "Mahallah Joe, Block Star",
+    "openHours": "8:00 am - 11:59 pm",
+    "isOpen": true,
+    "menu": [
+      {
+        "id": "2425961-m1",
+        "name": "Ais Kacang (ABC)",
+        "price": 4.5,
+        "category": "Desserts",
+        "popular": true,
+        "available": true
+      },
+      {
+        "id": "2425961-m2",
+        "name": "Cendol",
+        "price": 4.0,
+        "category": "Desserts",
+        "popular": true,
+        "available": true
+      },
+      {
+        "id": "2425961-m3",
+        "name": "Sago Gula Melaka",
+        "price": 6.0,
+        "category": "Desserts",
+        "popular": false,
+        "available": true
+      },
+      {
+        "id": "2425961-m4",
+        "name": "Bubur Cha Cha",
+        "price": 5.5,
+        "category": "Desserts",
+        "popular": false,
+        "available": true
+      },
+      {
+        "id": "2425961-m5",
+        "name": "Apam Balik",
+        "price": 3.5,
+        "category": "Snacks",
+        "popular": true,
+        "available": true
+      },
+      {
+        "id": "2425961-m6",
+        "name": "Pisang Goreng",
+        "price": 3.0,
+        "category": "Snacks",
+        "popular": false,
+        "available": true
+      },
+      {
+        "id": "2425961-m7",
+        "name": "Roti Tisu",
+        "price": 7.0,
+        "category": "Snacks",
+        "popular": true,
+        "available": true
+      },
+      {
+        "id": "2425961-m8",
+        "name": "Ondeh-Ondeh",
+        "price": 5.0,
+        "category": "Kuih Muih",
+        "popular": false,
+        "available": true
+      },
+      {
+        "id": "2425961-m9",
+        "name": "Kuih Keria",
+        "price": 4.0,
+        "category": "Kuih Muih",
+        "popular": false,
+        "available": true
+      },
+      {
+        "id": "2425961-m10",
+        "name": "Kuih Ketayap",
+        "price": 4.5,
+        "category": "Kuih Muih",
+        "popular": false,
+        "available": true
+      }
+    ]
+  }
+]

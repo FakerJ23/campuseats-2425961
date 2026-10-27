@@ -1,46 +1,180 @@
 // src/App.jsx
+import { useState, useEffect } from 'react'
 import Header from "./components/Header.jsx";
 import VendorCard from "./components/VendorCard.jsx";
 import MenuItemCard from "./components/MenuItemCard.jsx";
 import Footer from "./components/Footer.jsx";
-
-// 1. Paste the array here
-const dessertMenu = [
-  { name: 'Ais Kacang (ABC)', description: 'Shaved ice with red beans, sweet corn, grass jelly, and palm sugar.', price: 4.5, available: true },
-  { name: 'Cendol', description: 'Shaved ice with rich coconut milk, palm sugar syrup, and green rice flour jelly.', price: 4.0, available: true },
-  { name: 'Apam Balik', description: 'Folded pancake filled with crushed peanuts, sugar, and sweet corn.', price: 3.5, available: true },
-  { name: 'Pisang Goreng', description: 'Fresh bananas coated in batter and deep-fried until golden.', price: 3.0, available: true },
-  { name: 'Ondeh-Ondeh', description: 'Green glutinous rice balls coated in grated coconut and filled with molten palm sugar.', price: 5.0, available: true },
-  { name: 'Sago Gula Melaka', description: 'Pudding made with sago pearls, palm sugar syrup, and coconut milk.', price: 6.0, available: true },
-  { name: 'Bubur Cha Cha', description: 'Sweet potatoes, taro, and sago pearls served in coconut milk.', price: 5.5, available: false },
-  { name: 'Kuih Keria', description: 'Donut made with mashed sweet potatoes and lightly glazed.', price: 4.0, available: true },
-  { name: 'Kuih Ketayap', description: 'Rolled pandan pancake filled with grated coconut and palm sugar.', price: 4.5, available: true },
-  { name: 'Roti Tisu', description: 'Paper-thin, crispy cone-shaped flatbread drizzled with condensed milk.', price: 7.0, available: true }
-];
+import { Loading, ErrorMessage } from "./components/Status.jsx";
+import CartPage from "./components/CartPage.jsx";
 
 function App() {
-  return (
-    <>
-      <Header />
-      <main className="container">
+  const [vendors, setVendors] = useState([])
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState(null)
+  const [reloadKey, setReloadKey] = useState(0)
+
+  const [view, setView] = useState('menu')
+  
+  // --- B3: Lifted Cart State ---
+  const [cart, setCart] = useState([])
+  const [lastOrder, setLastOrder] = useState(null)
+
+  // --- B6: Filter Category State ---
+  const [activeCategory, setActiveCategory] = useState('All')
+
+  // Derive total quantity for the header badge
+  const cartCount = cart.reduce((total, line) => total + line.qty, 0)
+
+  // Add an item or increase its quantity if it already exists
+  function handleAddToCart(item) {
+    setCart((prevCart) => {
+      const existing = prevCart.find((line) => line.item.id === item.id)
+      if (existing) {
+        return prevCart.map((line) => 
+          line.item.id === item.id ? { ...line, qty: line.qty + 1 } : line
+        )
+      }
+      return [...prevCart, { item, qty: 1 }]
+    })
+  }
+
+  // Change quantity. If it drops to 0, the filter removes it.
+  function handleChangeQty(itemId, delta) {
+    setCart((prevCart) => 
+      prevCart.map((line) => 
+        line.item.id === itemId ? { ...line, qty: line.qty + delta } : line
+      ).filter((line) => line.qty > 0) 
+    )
+  }
+
+  function handleRemove(itemId) {
+    setCart((prevCart) => prevCart.filter((line) => line.item.id !== itemId))
+  }
+
+  // B5: Handle order submission
+  function handlePlaceOrder(details) {
+    const total = cart.reduce((sum, line) => sum + (line.item.price * line.qty), 0)
+    setLastOrder({ ...details, total })
+    setCart([]) // Clear cart
+    setView('done')
+  }
+
+  // B2: Fetching the data
+  useEffect(() => {
+    const controller = new AbortController()
+    setLoading(true)
+    setError(null)
+
+    fetch('/api/vendors.json', { signal: controller.signal })
+      .then((res) => {
+        if (!res.ok) throw new Error(`HTTP ${res.status}`)
+        return res.json()
+      })
+      .then((data) => {
+        setVendors(data)
+        setLoading(false)
+      })
+      .catch((err) => {
+        if (err.name !== 'AbortError') {
+          setError(err.message)
+          setLoading(false)
+        }
+      })
+
+    return () => controller.abort()
+  }, [reloadKey])
+
+  let content
+  if (view === 'cart') {
+    // Show the actual CartPage
+    content = (
+      <CartPage 
+        cart={cart} 
+        onChangeQty={handleChangeQty} 
+        onRemove={handleRemove} 
+        onPlaceOrder={handlePlaceOrder} 
+      />
+    )
+  } else if (view === 'done') {
+    content = (
+      <div className="card">
+        <h2>Order placed successfully!</h2>
+        <p>Thank you, {lastOrder?.name}.</p>
+        <p>Pick up at: <strong>{lastOrder?.pickupTime}</strong></p>
+        <p>Total paid: RM {lastOrder?.total.toFixed(2)}</p>
+        <button className="btn" onClick={() => setView('menu')} style={{marginTop: '1rem'}}>Back to Menus</button>
+      </div>
+    )
+  } else if (loading) {
+    content = <Loading />
+  } else if (error) {
+    content = <ErrorMessage message={error} onRetry={() => setReloadKey((k) => k + 1)} />
+  } else {
+    const currentVendor = vendors[0]
+    
+    // Feature 1: Extract unique categories and filter the menu
+    let categories = []
+    let displayedMenu = []
+    
+    if (currentVendor) {
+      // Create an array starting with 'All', followed by the unique categories from the menu
+      categories = ['All', ...new Set(currentVendor.menu.map((item) => item.category))]
+      
+      // Derive the filtered list based on the active category
+      displayedMenu = activeCategory === 'All' 
+        ? currentVendor.menu 
+        : currentVendor.menu.filter((item) => item.category === activeCategory)
+    }
+
+    content = (
+      <>
         <section>
           <h2 className="section-title">Today's vendors</h2>
-          <VendorCard />
+          {vendors.map((vendor) => (
+            <VendorCard key={vendor.id} vendor={vendor} />
+          ))}
         </section>
 
-        <section>
-          <h2 className="section-title">Popular items</h2>
-          <div className="grid">
-            {/* 2. Use .map() to loop through the list and pass each item as a prop */}
-            {dessertMenu.map((dessert, index) => (
-              <MenuItemCard key={index} item={dessert} />
-            ))}
-          </div>
-        </section>
-      </main>
+        {currentVendor && (
+          <section>
+            <h2 className="section-title">Menu: {currentVendor.name}</h2>
+            
+            {/* Feature 1: Render the category filter buttons */}
+            <div className="category-filters">
+              {categories.map((cat) => (
+                <button 
+                  key={cat} 
+                  className={`filter-btn ${activeCategory === cat ? 'active' : ''}`}
+                  onClick={() => setActiveCategory(cat)}
+                >
+                  {cat}
+                </button>
+              ))}
+            </div>
+
+            <div className="grid">
+              {/* Map over displayedMenu instead of currentVendor.menu */}
+              {displayedMenu.map((item) => (
+                <MenuItemCard key={item.id} item={item} onAdd={handleAddToCart} />
+              ))}
+            </div>
+          </section>
+        )}
+      </>
+    )
+  }
+
+  return (
+    <>
+      <Header 
+        cartCount={cartCount}
+        onShowMenu={() => setView('menu')} 
+        onShowCart={() => setView('cart')} 
+      />
+      <main className="container">{content}</main>
       <Footer />
     </>
-  );
+  )
 }
 
 export default App;
