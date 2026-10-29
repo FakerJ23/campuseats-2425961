@@ -1,4 +1,3 @@
-// src/components/Status.jsx
 export function Loading() {
   return <p className="muted" role="status">Loading menus...</p>
 }

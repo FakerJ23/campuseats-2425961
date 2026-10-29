@@ -1,4 +1,3 @@
-// src/components/CartItem.jsx
 function CartItem({ line, onChangeQty, onRemove }) {
   const { item, qty } = line
   
